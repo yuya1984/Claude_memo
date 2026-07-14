@@ -1,3 +1,20 @@
+実際に「Redactedでない中身」を見るための公式な方法
+
+調査した範囲では、SharePoint等のナレッジソースを使った生成回答のプロンプトと応答の実際の中身を確認できる、公式に文書化された唯一のルートはMicrosoft Purviewの監査ログ(Audit)/ DSPM for AI Activity Explorer です。
+
+前提条件:
+- Copilot Studioのようなマイクロソフト製アプリは、追加ライセンスなしで既定のAudit (Standard)に含まれます(非Microsoft製AIアプリのような従量課金は不要)
+- 監査ログを閲覧するには Compliance Administrator 相当の権限が必要
+- プロンプト・応答の実際の内容を表示するには、Microsoft Purview Content Explorer Content Viewer ロールグループのメンバーである必要があります(通常の監査ログ閲覧権限だけでは中身までは見えません)
+
+手順:
+1. Microsoft Purviewポータル (https://purview.microsoft.com/)にサインイン
+2. Solutions → DSPM for AI (classic) を選択
+3. Reports ページで Copilot experiences & agents を選択
+4. 各レポートグラフの View details を選択し、activity explorer に遷移
+5. フィルターで AI app category を Copilot experiences & agents に設定し、対象のアクティビティを絞り込む
+6. 個々のアクティビティをドリルダウンすると、(Content Explorer Content 
+
 Geminiの情報について
 
 結論から言うと、その情報(Application Insightsに渡せば運用管理用になるためRedactedにならない)を裏付ける公式ドキュメントは見つかりませんでした。おそらく不正確、または別の機能と混同している可能性が高いです。
