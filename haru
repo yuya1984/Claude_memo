@@ -1,3 +1,33 @@
+手順
+
+ステップ1: 必要なロールを割り当てる(未付与の場合)
+
+1. Microsoft Purviewポータル (https://purview.microsoft.com/)にサインイン
+2. Settings(または Roles and scopes → Role groups)に移動
+3. Content Explorer Content Viewer ロールグループ(または Microsoft Purview Data Security AI Content Viewer ロール)を検索し、自分自身または対象の管理者アカウントをメンバーとして追加
+4. 反映まで多少時間がかかる場合があります
+
+詳細はこちら: Permissions for Data Security Posture Management for AI (https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-permissions)
+
+ステップ2: 監査が有効か確認する
+
+1. Microsoft Purviewポータル → Solutions → Audit
+2. 監査が無効の場合は「Turn auditing on」に従って有効化(通常は既定で有効)
+
+ステップ3: DSPM for AI (classic) を開く
+
+1. Microsoft Purviewポータル (https://purview.microsoft.com/) → Solutions → DSPM for AI (classic) を選択
+2. Overview タブで All AI apps ビューが選択されていることを確認
+3. Get started セクションで「Turn on Microsoft Purview Audit」が完了済みか確認(既定で完了していることが多い)
+
+ステップ4: Activity Explorerで対象の会話を確認する
+
+1. 左側のナビゲーションから Activity explorer を選択
+2. フィルターで AI app category(またはWorkload)を Copilot experiences and agents に設定
+3. 必要に応じて、Copilot Studioの特定のエージェントに絞り込む(AppIdentityが Copilot.Studio.<エージェントのGUID> の形式で表示されます)
+4. イベント一覧から AI interaction タイプのイベントを探す
+5. 該当のイベントを選択すると、フライアウトペインが開き、(Content Explorer Content Viewer等のロールを持っていれば)プロンプトと応答の内容が表示されます
+
 実際に「Redactedでない中身」を見るための公式な方法
 
 調査した範囲では、SharePoint等のナレッジソースを使った生成回答のプロンプトと応答の実際の中身を確認できる、公式に文書化された唯一のルートはMicrosoft Purviewの監査ログ(Audit)/ DSPM for AI Activity Explorer です。
