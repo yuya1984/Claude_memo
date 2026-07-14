@@ -1,0 +1,140 @@
+Geminiの情報について
+
+結論から言うと、その情報(Application Insightsに渡せば運用管理用になるためRedactedにならない)を裏付ける公式ドキュメントは見つかりませんでした。おそらく不正確、または別の機能と混同している可能性が高いです。
+
+- 「SharePointをナレッジソースとした回答はREDACTEDになる」という保護は、Microsoft Purviewとの統合によるもので、「ユーザーがアクセス権を持たないデータや機密ラベル付きデータを、生成AIの回答を通じて外部に永続化させない」という設計思想に基づくものです。この保護の目的自体が「運用管理者だから見せてよい」という区分ではなく、「その回答が生成された元データの機密性」に基づく制御なので、"運用管理用のログだから対象外" という理屈にはなりにくいです。
+- 実際、前回お伝えいただいたApplication Insightsの集計結果(BotMessageReceived 144件 に対し BotMessageSend 125件、19件の差)は、Application Insights側でもRedactedと同様の抑制が起きている可能性を示唆しており、Geminiの説明と矛盾しています。
+
+Gemini(や他の生成AI)は、Microsoftの複雑な機能同士(Application Insightsのトグル設定、Purviewの監査ログ、DSPM for AIなど)を混同して、もっともらしいが不正確な説明を生成することがあります。念のためこの点はご留意ください。
+
+実際に「Redactedでない中身」を見るための公式な方法
+
+調査した範囲では、SharePoint等のナレッジソースを使った生成回答のプロンプトと応答の実際の中身を確認できる、公式に文書化された唯一のルートはMicrosoft Purviewの監査ログ(Audit)/ DSPM for AI Activity Explorer です。
+
+前提条件:
+- Copilot Studioのようなマイクロソフト製アプリは、追加ライセンスなしで既定のAudit (Standard)に含まれます(非Microsoft製AIアプリのような従量課金は不要)
+- 監査ログを閲覧するには Compliance Administrator 相当の権限が必要
+- プロンプト・応答の実際の内容を表示するには、Microsoft Purview Content Explorer Content Viewer ロールグループのメンバーである必要があります(通常の監査ログ閲覧権限だけでは中身までは見えません)
+
+手順:
+1. Microsoft Purviewポータル (https://purview.microsoft.com/)にサインイン
+2. Solutions → DSPM for AI (classic) を選択
+3. Reports ページで Copilot experiences & agents を選択
+4. 各レポートグラフの View details を選択し、activity explorer に遷移
+5. フィルターで AI app category を Copilot experiences & agents に設定し、対象のアクティビティを絞り込む
+6. 個々のアクティビティをドリルダウンすると、(Content Explorer Content Viewerロールを持つ場合)プロンプトと応答の内容が表示される
+
+もしくは、Solutions → Audit から、Activities欄で Operation/RecordType/Workload によるフィルタ検索も可能です。
+
+重要な注意点(未確認事項)
+
+正直にお伝えすると、この Purview の監査ログ/Activity Explorerが、SharePointナレッジソース由来の回答についても「REDACTEDにならず」実際のテキストを表示するかどうかは、今回調べた公式ドキュメントの中で明記が見つかりませんでした。Copilot Studio側の「conversation transcripts」(Dataverse保存分)についてのREDACTEDの記述と、Purview監査ログの「prompts and responses が captured される」という記述は別々のページにあり、両者の関係(Purview側が同じ保護の対象になるのか、ならないのか)を明確に述べた一次情報は見当たりませんでした。
+
+そのため、以下のいずれかで確認することを推奨します。
+- 実際に上記の手順でPurview側のログを開き、該当のSharePointナレッジソース回答の中身が見えるか実機検証する
+- または、Microsoft側(サポート/Microsoft Q&A)に直接問い合わせて仕様を確認する
+
+もし主目的が「KQLでのダッシュボード化・アラート等、Application Insightsベースの運用監視」であれば、Purview監査ログはApplication Insightsとは別の仕組み(コンプライアンス目的の監査ログ)であるため、単純な置き換えにはならない点もご留意ください。
+
+---
+参照した公式ドキュメント:
+- Understand downloaded session data from Copilot Studio (https://learn.microsoft.com/en-us/microsoft-copilot-studio/analytics-transcripts-studio)(2026-06-17更新)
+- Use Microsoft Purview to manage data security & compliance for Microsoft Copilot Studio (https://learn.microsoft.com/en-us/purview/ai-copilot-studio)(2026-06-25更新)
+- Audit logs for Copilot and AI applications (https://learn.microsoft.com/en-us/purview/audit-copilot)(2026-06-11更新)
+
+✻ Sautéed for 1m 46s
+
+❯ Microsoft Purviewの監査ログ(Audit)/ DSPM for AI Activity Explorerこれを用いた方法を教えてください。具体的な手順も併せてお伝えしてください。
+
+⏺ Fetch(https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-permissions)
+Received 9.6KB (200 OK)
+
+⏺ Fetch(https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-considerations)
+Received 22KB (200 OK)
+
+⏺ Fetch(https://learn.microsoft.com/en-us/purview/dspm-for-ai)
+Received 25KB (200 OK)
+
+──────────────────────────────────────────────────── 1 new message ─────────────────────────────────────────────────────
+
+前提条件
+
+必要な権限(重要な注意点あり)
+
+DSPM for AIやActivity Explorerに「アクセスする」権限と、「プロンプト・応答の実際のテキストを見る」権限は別物です。公式ドキュメントの権限マトリックスによると:
+
+┌─────────────────────────────────────────────────────────┬────────────────────┬──────────────────────────────────┐
+│                                                         │    Compliance      │                                  │
+│                          操作                           │  Administrator /   │        追加で必要なロール        │
+│                                                         │      Global        │                                  │
+│                                                         │   Administrator    │                                  │
+├─────────────────────────────────────────────────────────┼────────────────────┼──────────────────────────────────┤
+│ DSPM for AI全体の閲覧・レポート閲覧・Activity           │ ✓ できる           │ 不要                             │
+│ Explorerのイベント一覧閲覧                              │                    │                                  │
+├─────────────────────────────────────────────────────────┼────────────────────┼──────────────────────────────────┤
+│                                                         │                    │ Content Explorer Content Viewer  │
+│ Activity Explorerで「AI                                 │ ✕ できない         │ または Microsoft Purview Data    │
+│ interaction」イベントのプロンプト・応答の中身を見る     │                    │ Security AI Content Viewer       │
+│                                                         │                    │ ロールが必須                     │
+└─────────────────────────────────────────────────────────┴────────────────────┴──────────────────────────────────┘
+
+つまり、管理者権限(Compliance Administrator等)を持っていても、上記の専用ロールが別途付与されていないと、中身のテキストは見えません。
+
+監査(Auditing)が有効になっていること
+- 既定でテナントは有効ですが、念のため確認が必要です。
+
+ライセンスについて(未確定・要確認)
+- Copilot Studio自体はMicrosoft製アプリとして既定でAudit Standardに含まれ、追加ライセンス不要と明記されています。
+- ただし、DSPM for AIの前提条件ページには「Microsoft 365 Copilotおよびエージェントの監視には、ユーザーにMicrosoft 365 Copilotライセンスが割り当てられていること」という記載もあります。これがCopilot Studioで作成したカスタムエンジンエージェント(Teams/Web等にデプロイしたもの)にも適用されるのか、Microsoft 365 Copilot本体機能のみを指すのかは、ドキュメント上明確に区別されていませんでした。ライセンスをお持ちでない場合は、実際に試してみて表示されるか確認するか、Microsoftサポートに確認することを推奨します。
+
+手順
+
+ステップ1: 必要なロールを割り当てる(未付与の場合)
+
+1. Microsoft Purviewポータル (https://purview.microsoft.com/)にサインイン
+2. Settings(または Roles and scopes → Role groups)に移動
+3. Content Explorer Content Viewer ロールグループ(または Microsoft Purview Data Security AI Content Viewer ロール)を検索し、自分自身または対象の管理者アカウントをメンバーとして追加
+4. 反映まで多少時間がかかる場合があります
+
+詳細はこちら: Permissions for Data Security Posture Management for AI (https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-permissions)
+
+ステップ2: 監査が有効か確認する
+
+1. Microsoft Purviewポータル → Solutions → Audit
+2. 監査が無効の場合は「Turn auditing on」に従って有効化(通常は既定で有効)
+
+ステップ3: DSPM for AI (classic) を開く
+
+1. Microsoft Purviewポータル (https://purview.microsoft.com/) → Solutions → DSPM for AI (classic) を選択
+2. Overview タブで All AI apps ビューが選択されていることを確認
+3. Get started セクションで「Turn on Microsoft Purview Audit」が完了済みか確認(既定で完了していることが多い)
+
+ステップ4: Activity Explorerで対象の会話を確認する
+
+1. 左側のナビゲーションから Activity explorer を選択
+2. フィルターで AI app category(またはWorkload)を Copilot experiences and agents に設定
+3. 必要に応じて、Copilot Studioの特定のエージェントに絞り込む(AppIdentityが Copilot.Studio.<エージェントのGUID> の形式で表示されます)
+4. イベント一覧から AI interaction タイプのイベントを探す
+5. 該当のイベントを選択すると、フライアウトペインが開き、(Content Explorer Content Viewer等のロールを持っていれば)プロンプトと応答の内容が表示されます
+
+既知の制限(公式ドキュメント記載)
+
+- 「AI interaction」イベントは、プロンプト・応答のテキストが必ずしも表示されるとは限りません。 プロンプトと応答が複数の連続したエントリに分かれて記録される場合があります。
+- ユーザーがExchange Online上にメールボックスを持っていない場合、プロンプト・応答が表示されません。
+- Microsoft Facilitatorが生成するAIノートについては、プロンプト・応答が表示されません。
+- 収集ポリシー(collection policy)経由の場合、ポリシー内で「コンテンツのキャプチャ」オプションが選択されていないと、プロンプト・応答は表示されません(Copilot Studioは通常このケースに該当しないと考えられますが、念のため)。
+
+⚠️ 前回お伝えした重要な未確認事項について: 今回調べた範囲でも、「SharePointナレッジソース由来の回答(REDACTED扱いのもの)が、このActivity Explorerでは非マスクで表示されるか」を明記した記述は見つかりませんでした。上記の「既知の制限」を見る限り、そもそも表示されないケースが複数あることが明記されているため、期待通りに全文が見える保証はありません。実際に上記手順で試してみて、該当のSharePoint由来の回答が表示されるかどうかご自身の環境で確認いただくのが最も確実です。
+
+補足
+
+このDSPM for AIは「classic」版であり、Microsoftは新しいバージョンへの移行を進めています(該当ページに「This article is for the classic version...now replaced with a new version」との注記あり)。お使いの環境によっては画面名やナビゲーションが異なる可能性があるため、実際の画面と本回答の手順名が一致しない場合は、Purviewポータル内の該当機能を探していただくか、新しいDSPM for AI (https://learn.microsoft.com/en-us/purview/data-security-posture-management-learn-about)のドキュメントもあわせてご確認ください。
+
+---
+参照した公式ドキュメント:
+- Permissions for Microsoft Purview Data Security Posture Management for AI (classic) (https://learn.microsoft.com/en-us/purview/ai-microsoft-purview-permissions)(2026-06-25更新)
+- Considerations for deploying Microsoft Purview Data Security Posture Management (DSPM) for AI (https://learn.microsoft.com/en-us/purview/dspm-for-ai-considerations)(2026-06-25更新)
+- Learn how Microsoft Purview Data Security Posture Management for AI provides data security and compliance protections (https://learn.microsoft.com/en-us/purview/dspm-for-ai)(2025-12-15作成、2026-06-25更新)
+- Audit logs for Copilot and AI applications (https://learn.microsoft.com/en-us/purview/audit-copilot)(2026-06-11更新)
+
+✻ Crunched for 1m 16s
