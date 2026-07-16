@@ -1,0 +1,187 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnGeneratedResponse
+  id: main
+  actions:
+    - kind: InvokeAIBuilderModelAction
+      id: invokeAIBuilderModelAction_jniIyZ
+      input:
+        binding:
+          ai_response: =System.Response.FormattedText
+          user_input: =System.Activity.Text
+
+      output:
+        binding:
+          predictionOutput: Topic.var_IsNeed
+
+      aIModelId: 8cf476a6-fed6-4f07-9e6c-68051eeb7829
+
+    - kind: ConditionGroup
+      id: conditionGroup_CrcHNI
+      conditions:
+        - id: conditionItem_bUAzbt
+          condition: =Topic.var_IsNeed.text = "true"
+          actions:
+            - kind: Question
+              id: question_U9eSLQ
+              interruptionPolicy:
+                allowInterruption: true
+
+              variable: init:Topic.WantsConnect
+              prompt: 担当者にお繋ぎしましょうか。
+              entity:
+                kind: EmbeddedEntity
+                definition:
+                  kind: ClosedListEntity
+                  items:
+                    - id: はい
+                      displayName: はい
+
+                    - id: いいえ
+                      displayName: いいえ
+
+                displayName: EmbeddedEntity-b3GiUL
+
+            - kind: ConditionGroup
+              id: conditionGroup_D1xTuR
+              conditions:
+                - id: conditionItem_POOWNP
+                  condition: =Topic.WantsConnect = 'cr834_joshis.topic.kintone.main.question_U9eSLQ'.'はい'
+                  actions:
+                    - kind: InvokeAIBuilderModelAction
+                      id: invokeAIBuilderModelAction_HTJTbm
+                      input:
+                        binding:
+                          ConversationHistory: =System.Activity.Text
+                          ExistingEmail: =""
+                          ExistingEmployeeNumber: =""
+                          ExistingInquiryDetail: =""
+                          ExistingInquirySummary: =""
+                          ExistingIssueDate: =""
+                          ExistingSystemType: =""
+
+                      output:
+                        binding:
+                          predictionOutput: Topic.ExtractedFields
+
+                      aIModelId: 74e1affd-a10e-428f-83ce-aaf36242349f
+
+                    - kind: SetVariable
+                      id: setVariable_ljgmRq
+                      variable: Topic.MissingFields
+                      value: |-
+                        =Concat(
+                            Filter(
+                                Table(
+                                    { Name: "問い合わせ内容", Value: Topic.ExtractedFields.structuredOutput.InquirySummary },
+                                    { Name: "システム種類", Value: Topic.ExtractedFields.structuredOutput.SystemType },
+                                    { Name: "問い合わせ詳細", Value: Topic.ExtractedFields.structuredOutput.InquiryDetail },
+                                    { Name: "社員番号", Value: Topic.ExtractedFields.structuredOutput.EmployeeNumber },
+                                    { Name: "メールアドレス", Value: Topic.ExtractedFields.structuredOutput.Email },
+                                    { Name: "不具合発生日", Value: Topic.ExtractedFields.structuredOutput.IssueDate }
+                                ),
+                                IsBlank(Value)
+                            ),
+                            Name,
+                            ", "
+                        )
+
+                    - kind: ConditionGroup
+                      id: conditionGroup_WHruB3
+                      conditions:
+                        - id: conditionItem_h9oQVk
+                          condition: =Len(Topic.MissingFields) > 0
+                          actions:
+                            - kind: Question
+                              id: question_i4dS6j
+                              interruptionPolicy:
+                                allowInterruption: true
+
+                              variable: init:Topic.MissingAnswer
+                              prompt: "{Concatenate(\"以下の情報を教えてください: \", Topic.MissingFields)}"
+                              entity: StringPrebuiltEntity
+
+                            - kind: InvokeAIBuilderModelAction
+                              id: invokeAIBuilderModelAction_5KodjD
+                              input:
+                                binding:
+                                  ConversationHistory: =Topic.MissingAnswer
+                                  ExistingEmail: =Topic.ExtractedFields.structuredOutput.Email
+                                  ExistingEmployeeNumber: |
+                                    =Topic.ExtractedFields.structuredOutput.EmployeeNumber
+                                  ExistingInquiryDetail: =Topic.ExtractedFields.structuredOutput.InquiryDetail
+                                  ExistingInquirySummary: =Topic.ExtractedFields.structuredOutput.InquirySummary
+                                  ExistingIssueDate: =Topic.ExtractedFields.structuredOutput.IssueDate
+                                  ExistingSystemType: =Topic.ExtractedFields.structuredOutput.SystemType
+
+                              output:
+                                binding:
+                                  predictionOutput: Topic.ExtractedFields
+
+                              aIModelId: 74e1affd-a10e-428f-83ce-aaf36242349f
+
+                            - kind: Question
+                              id: question_xcHN3m
+                              interruptionPolicy:
+                                allowInterruption: true
+
+                              variable: init:Topic.SendChoice
+                              prompt: |-
+                                この内容で送信しますか？{Concatenate(
+                                    "以下の内容で送信しますか? ",
+                                    "問い合わせ内容: ", Topic.ExtractedFields.structuredOutput.InquirySummary, " / ",
+                                    "システム種類: ", Topic.ExtractedFields.structuredOutput.SystemType, " / ",
+                                    "問い合わせ詳細: ", Topic.ExtractedFields.structuredOutput.InquiryDetail, " / ",
+                                    "社員番号: ", Topic.ExtractedFields.structuredOutput.EmployeeNumber, " / ",
+                                    "メールアドレス: ", Topic.ExtractedFields.structuredOutput.Email, " / ",
+                                    "不具合発生日: ", Topic.ExtractedFields.structuredOutput.IssueDate
+                                )}
+                              entity:
+                                kind: EmbeddedEntity
+                                definition:
+                                  kind: ClosedListEntity
+                                  items:
+                                    - id: はい
+                                      displayName: はい
+
+                                    - id: いいえ
+                                      displayName: いいえ
+
+                            - kind: ConditionGroup
+                              id: conditionGroup_c2WGXA
+                              conditions:
+                                - id: conditionItem_SJ4LLL
+                                  condition: =Topic.SendChoice = 'cr834_joshis.topic.kintone.main.question_xcHN3m'.'はい'
+                                  actions:
+                                    - kind: InvokeFlowAction
+                                      id: invokeFlowAction_wDCGiu
+                                      input:
+                                        binding:
+                                          date: =Topic.ExtractedFields.structuredOutput.IssueDate
+                                          email: =Topic.ExtractedFields.structuredOutput.Email
+                                          file: =Blank()
+                                          text: =Topic.ExtractedFields.structuredOutput.SystemType
+                                          text_1: =""
+                                          text_2: =Topic.ExtractedFields.structuredOutput.EmployeeNumber
+                                          text_3: =Topic.ExtractedFields.structuredOutput.InquirySummary
+                                          text_4: =Topic.ExtractedFields.structuredOutput.InquiryDetail
+
+                                      output:
+                                        binding:
+                                          ticketnumber: Topic.TicketNumber
+
+                                      flowId: 36544e63-b176-f111-ab0e-e4fade048295
+
+                    - kind: EndDialog
+                      id: Yn4Wkb
+
+                - id: conditionItem_KQVUYb
+                  condition: =Topic.WantsConnect = 'cr834_joshis.topic.kintone.main.question_U9eSLQ'.'いいえ'
+
+      elseActions:
+        - kind: BeginDialog
+          id: iWYCyS
+          dialog: cr834_joshis.topic.Search
+
+inputType: {}
+outputType: {}
